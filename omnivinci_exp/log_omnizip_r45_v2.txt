@@ -1,0 +1,26 @@
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+======================================================================
+[1] Dataset: worldsense
+======================================================================
+  subset: 500 samples (seed 0)
+  samples        : 500
+  distinct videos: 451 (1.11 questions per video)
+  missing videos : 0
+  bad answers    : 0
+  decode check  : 0/20 sampled videos undecodable (0%)
+  output: /mnt/hdd2/trung/projects/token_compression/OmniZip/results/omnivinci-9b/worldsense/omnizip_r45_v2_n500
+
+======================================================================
+[2] Loading model (method=omnizip)
+======================================================================
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:04<00:13,  4.58s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:06<00:05,  2.98s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:07<00:02,  2.22s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:08<00:00,  1.49s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:08<00:00,  2.03s/it]
+Loaded model from /mnt/hdd2/trung/projects/token_compression/omnivinci/llm with dtype torch.bfloat16
+Using chat template: qwen2
+  compression: method=omnizip target_retained=0.450 alpha=0.50
+  GPUs visible: 1
+
+======================================================================
+[3] Running
+======================================================================
+worldsense:   0%|          | 0/500 [00:00<?, ?it/s]worldsense:   0%|          | 1/500 [00:11<1:37:05, 11.67s/it]worldsense:   0%|          | 2/500 [00:24<1:40:40, 12.13s/it]worldsense:   1%|          | 3/500 [00:34<1:35:00, 11.47s/it]worldsense:   1%|          | 4/500 [00:42<1:21:50,  9.90s/it]worldsense:   1%|          | 5/500 [00:53<1:25:48, 10.40s/it]worldsense:   1%|          | 6/500 [01:03<1:24:25, 10.25s/it]worldsense:   1%|▏         | 7/500 [01:13<1:23:40, 10.18s/it]worldsense:   2%|▏         | 8/500 [01:26<1:30:26, 11.03s/it]worldsense:   2%|▏         | 9/500 [01:38<1:31:45, 11.21s/it]worldsense:   2%|▏         | 10/500 [01:50<1:35:55, 11.75s/it]worldsense:   2%|▏         | 11/500 [02:06<1:45:44, 12.98s/it]worldsense:   2%|▏         | 12/500 [02:22<1:52:12, 13.80s/it]worldsense:   3%|▎         | 13/500 [02:33<1:45:07, 12.95s/it]worldsense:   3%|▎         | 14/500 [02:43<1:36:46, 11.95s/it]worldsense:   3%|▎         | 15/500 [02:51<1:27:30, 10.83s/it]worldsense:   3%|▎         | 16/500 [02:59<1:21:05, 10.05s/it]worldsense:   3%|▎         | 17/500 [03:10<1:22:16, 10.22s/it]worldsense:   4%|▎         | 18/500 [03:19<1:19:03,  9.84s/it]worldsense:   4%|▍         | 19/500 [03:29<1:20:19, 10.02s/it]worldsense:   4%|▍         | 20/500 [03:44<1:32:30, 11.56s/it]worldsense:   4%|▍         | 21/500 [03:53<1:25:36, 10.72s/it]worldsense:   4%|▍         | 22/500 [04:02<1:20:17, 10.08s/it]worldsense:   5%|▍         | 23/500 [04:11<1:17:52,  9.79s/it]worldsense:   5%|▍         | 24/500 [04:22<1:21:08, 10.23s/it]worldsense:   5%|▌         | 25/500 [04:34<1:25:44, 10.83s/it]worldsense:   5%|▌         | 26/500 [04:46<1:27:18, 11.05s/it]worldsense:   5%|▌         | 27/500 [04:54<1:20:59, 10.27s/it]worldsense:   6%|▌         | 28/500 [05:07<1:27:24, 11.11s/it]worldsense:   6%|▌         | 29/500 [05:20<1:31:02, 11.60s/it]worldsense:   6%|▌         | 30/500 [05:33<1:33:14, 11.90s/it]worldsense:   6%|▌         | 31/500 [05:43<1:29:31, 11.45s/it]worldsense:   6%|▋         | 32/500 [05:54<1:28:09, 11.30s/it]worldsense:   7%|▋         | 33/500 [06:02<1:19:43, 10.24s/it]worldsense:   7%|▋         | 34/500 [06:09<1:11:50,  9.25s/it]worldsense:   7%|▋         | 35/500 [06:22<1:20:14, 10.35s/it]worldsense:   7%|▋         | 36/500 [06:36<1:28:53, 11.49s/it]worldsense:   7%|▋         | 37/500 [06:46<1:26:08, 11.16s/it]worldsense:   8%|▊         | 38/500 [06:55<1:20:15, 10.42s/it]worldsense:   8%|▊         | 39/500 [07:06<1:20:44, 10.51s/it]worldsense:   8%|▊         | 40/500 [07:17<1:22:25, 10.75s/it]worldsense:   8%|▊         | 41/500 [07:27<1:21:51, 10.70s/it]worldsense:   8%|▊         | 42/500 [07:39<1:22:54, 10.86s/it]worldsense:   9%|▊         | 43/500 [07:49<1:21:46, 10.74s/it]worldsense:   9%|▉         | 44/500 [08:00<1:21:03, 10.67s/it]worldsense:   9%|▉         | 45/500 [08:10<1:20:53, 10.67s/it]worldsense:   9%|▉         | 46/500 [08:19<1:16:26, 10.10s/it]
