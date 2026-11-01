@@ -2591,6 +2591,7 @@ class Qwen2_5OmniThinkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForCo
                 merging_ratio_v=omnizip_config["rho_video"],
                 contextual_ratio=omnizip_config["contextual_ratio"],
                 g=omnizip_config["g"],
+                attn_layer=self.model.layers[0],
             )
 
             inputs_embeds = inputs_embeds[:, global_mask, :]

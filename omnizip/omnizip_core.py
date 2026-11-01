@@ -1,6 +1,8 @@
 import torch
 from typing import Dict, List, Tuple, Optional
 
+from .av_malign import AV_Aligner
+
 def omnizip_audio_attn(
     audio_feature: torch.Tensor,
     video_feature: Optional[torch.Tensor],
@@ -69,6 +71,50 @@ def omnizip_audio_attn(
                 merge_plan[int(anchors[c].item())] = chosen
 
     return keep_mask, merge_plan
+
+
+_AV_ALIGNERS: Dict[Tuple, AV_Aligner] = {}
+
+
+def get_av_aligner(
+    dim: int, device, dtype, num_heads: int = 1, num_clusters: int = 5, attn_layer: Optional[torch.nn.Module] = None
+) -> AV_Aligner:
+    key = (dim, str(device), dtype, num_heads, num_clusters, id(attn_layer))
+    if key not in _AV_ALIGNERS:
+        aligner = AV_Aligner(dim, num_heads=num_heads, num_clusters=num_clusters).to(device=device, dtype=dtype).eval()
+        if attn_layer is not None:
+            # Share the LLM layer's frozen q/k/v instead of the randomly initialised ones
+            aligner.load_attention(attn_layer)
+        _AV_ALIGNERS[key] = aligner
+    return _AV_ALIGNERS[key]
+
+
+def omnizip_av_align(
+    video_feature: torch.Tensor,
+    audio_feature: torch.Tensor,
+    num_tokens_per_frame: int,
+    merging_ratio: float,
+    aligner: AV_Aligner,
+):
+    num_frames = video_feature.shape[0] // num_tokens_per_frame
+    mask = torch.zeros(video_feature.shape[0], dtype=torch.bool, device=video_feature.device)
+    num_keep = int(num_tokens_per_frame * (1.0 - merging_ratio))
+
+    if num_frames == 0 or num_keep >= num_tokens_per_frame:
+        mask[: num_frames * num_tokens_per_frame] = True
+        return mask
+
+    frames = video_feature[: num_frames * num_tokens_per_frame].reshape(num_frames, num_tokens_per_frame, -1)
+    aud = audio_feature.to(frames.dtype).unsqueeze(0).expand(num_frames, -1, -1)
+
+    with torch.no_grad():
+        scores = aligner.token_scores(aud, frames)  # [T, tokens_per_frame]
+
+    keep_idx = scores.topk(num_keep, dim=1).indices
+    offsets = torch.arange(num_frames, device=mask.device).unsqueeze(1) * num_tokens_per_frame
+    mask[(keep_idx + offsets).reshape(-1)] = True
+    return mask
+
 
 def omnizip_istm(video_feature: torch.Tensor, num_tokens_per_frame: int, merging_ratio: float):
     num_frames = video_feature.shape[0] // num_tokens_per_frame
@@ -149,6 +195,7 @@ def omnizip(
     merging_ratio_v: float = 0.5,
     contextual_ratio: float = 0.05,
     g: int = 3,
+    attn_layer: Optional[torch.nn.Module] = None,
 ):
     device = input_embeds.device
     is_batched = input_embeds.dim() == 3
@@ -286,7 +333,8 @@ def omnizip(
                                 min_ratio, min(max_ratio, adjusted_vs_guided[i] + adj_per_token)
                             )
 
-    # Apply ISTC compression per chunk
+    # Apply audio-guided AV_Aligner compression per chunk
+    aligner = get_av_aligner(D, device, flat_embeds.dtype, attn_layer=attn_layer)
     video_group_masks = []
     for i in range(num_video_chunks):
         v_start, v_end = video_chunks[i]
@@ -299,14 +347,29 @@ def omnizip(
 
         if i < num_guided:
             ratio = adjusted_vs_guided[i]
+            # Guide with the audio tokens kept in the aligned chunk (all of them if none were kept)
+            a_start, a_end = audio_chunks[i]
+            group_audio = audio_feature[a_start:a_end]
+            kept_audio = group_audio[audio_mask[a_start:a_end]]
+            group_audio = kept_audio if kept_audio.shape[0] > 0 else group_audio
         else:
             ratio = merging_ratio_v
+            group_audio = audio_feature
 
-        group_mask = omnizip_istm(
-            group_feat,
-            num_tokens_per_frame=video_token_per_frame,
-            merging_ratio=ratio,
-        )
+        if group_audio.shape[0] == 0:
+            group_mask = omnizip_istm(
+                group_feat,
+                num_tokens_per_frame=video_token_per_frame,
+                merging_ratio=ratio,
+            )
+        else:
+            group_mask = omnizip_av_align(
+                group_feat,
+                group_audio,
+                num_tokens_per_frame=video_token_per_frame,
+                merging_ratio=ratio,
+                aligner=aligner,
+            )
         video_group_masks.append(group_mask)
 
     video_mask = torch.cat(video_group_masks, dim=0) if video_group_masks else torch.ones(0, dtype=torch.bool, device=device)
