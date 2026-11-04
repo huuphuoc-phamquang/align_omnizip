@@ -598,6 +598,7 @@ def _audio_token_importance(q: torch.Tensor, k: torch.Tensor) -> torch.Tensor:
             attn_chunk = F.softmax(attn_chunk, dim=-1)
             token_importance += attn_chunk.sum(dim=(0, 1))
             del attn_chunk
+    torch.cuda.empty_cache()  # release the chunk buffers once, not after every encoder layer
     return token_importance / (num_heads * T_len)
 
 
@@ -717,7 +718,6 @@ class Qwen2_5OmniAudioFlashAttention2(Qwen2_5OmniAudioAttention):
         else:
             attn_logits = None
             return_k = None
-        torch.cuda.empty_cache()
         return attn_output, attn_logits, return_k
 
 
@@ -771,7 +771,6 @@ class Qwen2_5OmniAudioSdpaAttention(Qwen2_5OmniAudioAttention):
         else:
             attn_logits = None
             return_k = None
-        torch.cuda.empty_cache()
         return attn_output, attn_logits, return_k
 
 
