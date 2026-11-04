@@ -579,6 +579,28 @@ class Qwen2_5OmniThinkerCausalLMOutputWithPast(ModelOutput):
     rope_deltas: Optional[torch.LongTensor] = None
 
 
+@torch.no_grad()
+def _audio_token_importance(q: torch.Tensor, k: torch.Tensor) -> torch.Tensor:
+    """OmniZip audio saliency: mean softmax attention each key token receives, over heads and queries.
+
+    q, k: [H, T, D]. Returns [T]. Chunked over heads and queries to bound memory.
+    """
+    scale = q.shape[-1] ** -0.5
+    num_heads, T_len = q.shape[0], q.shape[1]
+    token_importance = torch.zeros(T_len, device=q.device)
+    head_chunk = 4
+    seq_chunk = 512
+    for h in range(0, num_heads, head_chunk):
+        q_h = q[h:h + head_chunk]
+        k_h = k[h:h + head_chunk]
+        for i in range(0, T_len, seq_chunk):
+            attn_chunk = torch.matmul(q_h[:, i:i + seq_chunk, :], k_h.transpose(-1, -2)) * scale
+            attn_chunk = F.softmax(attn_chunk, dim=-1)
+            token_importance += attn_chunk.sum(dim=(0, 1))
+            del attn_chunk
+    return token_importance / (num_heads * T_len)
+
+
 class Qwen2_5OmniAudioAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -685,30 +707,9 @@ class Qwen2_5OmniAudioFlashAttention2(Qwen2_5OmniAudioAttention):
         attn_output = attn_output.reshape(seq_length, all_dim)
         attn_output = self.out_proj(attn_output)
 
-        import time
-        import torch
-
         if return_logits:
-
-            with torch.no_grad():
-                q = query_states.permute(1, 0, 2)
-                k = key_states.permute(1, 0, 2)
-                scale = q.shape[-1] ** -0.5
-                num_heads = q.shape[0]
-                T_len = q.shape[1]
-                token_importance = torch.zeros(T_len, device=q.device)
-                head_chunk = 4
-                seq_chunk = 512
-                for h in range(0, num_heads, head_chunk):
-                    q_h = q[h:h + head_chunk]
-                    k_h = k[h:h + head_chunk]
-                    for i in range(0, T_len, seq_chunk):
-                        attn_chunk = torch.matmul(q_h[:, i:i + seq_chunk, :], k_h.transpose(-1, -2)) * scale
-                        attn_chunk = F.softmax(attn_chunk, dim=-1)
-                        token_importance += attn_chunk.sum(dim=(0, 1))
-                        del attn_chunk
-                attn_logits = token_importance / (num_heads * T_len)
-                return_k = k
+            return_k = key_states.permute(1, 0, 2)  # [H, T, D]
+            attn_logits = _audio_token_importance(query_states.permute(1, 0, 2), return_k)
         else:
             attn_logits = None
             return_k = None
@@ -760,25 +761,9 @@ class Qwen2_5OmniAudioSdpaAttention(Qwen2_5OmniAudioAttention):
         attn_output = self.out_proj(attn_output)
 
         if return_logits:
-            with torch.no_grad():
-                q = query_states  # already [H, T, D] after the transpose above
-                k = key_states
-                scale = q.shape[-1] ** -0.5
-                num_heads = q.shape[0]
-                T_len = q.shape[1]
-                token_importance = torch.zeros(T_len, device=q.device)
-                head_chunk = 4
-                seq_chunk = 512
-                for h in range(0, num_heads, head_chunk):
-                    q_h = q[h:h + head_chunk]
-                    k_h = k[h:h + head_chunk]
-                    for i in range(0, T_len, seq_chunk):
-                        attn_chunk = torch.matmul(q_h[:, i:i + seq_chunk, :], k_h.transpose(-1, -2)) * scale
-                        attn_chunk = F.softmax(attn_chunk, dim=-1)
-                        token_importance += attn_chunk.sum(dim=(0, 1))
-                        del attn_chunk
-                attn_logits = token_importance / (num_heads * T_len)
-                return_k = k
+            # already [H, T, D] after the transpose above
+            attn_logits = _audio_token_importance(query_states, key_states)
+            return_k = key_states
         else:
             attn_logits = None
             return_k = None
