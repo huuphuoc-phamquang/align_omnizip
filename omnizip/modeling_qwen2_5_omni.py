@@ -2301,6 +2301,7 @@ class Qwen2_5OmniThinkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForCo
         self.pad_token_id = self.config.pad_token_id if self.config.pad_token_id is not None else -1
         self.spatial_merge_size = config.vision_config.spatial_merge_size
         self.rope_deltas = None
+        self.omnizip_config = None  # None -> forward() falls back to the paper's default ratios
         self.post_init()
 
     def get_input_embeddings(self):
