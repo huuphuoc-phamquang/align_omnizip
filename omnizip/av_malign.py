@@ -242,7 +242,7 @@ class AV_Aligner(nn.Module):
             enhanced_img_fea: [B, H*W, dim] -> enhanced image features
         """
         # Step 1: Cluster image features into K clusters
-        cluster_centers, _ = self.gumbel_clustering(img_fea) # [B, img_cluster, dim]
+        cluster_centers, _ = self.gumbel_clustering(img_fea) # [B, H*W, dim]: per-token soft-assigned center
 
         weighted_aud_fea = self._pool_audio(aud_fea, cluster_centers) # [B, 1, dim]
 
