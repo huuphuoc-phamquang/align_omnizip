@@ -761,8 +761,8 @@ class Qwen2_5OmniAudioSdpaAttention(Qwen2_5OmniAudioAttention):
 
         if return_logits:
             with torch.no_grad():
-                q = query_states.permute(1, 0, 2)  # [H, T, D]
-                k = key_states.permute(1, 0, 2)  # [H, T, D]
+                q = query_states  # already [H, T, D] after the transpose above
+                k = key_states
                 scale = q.shape[-1] ** -0.5
                 num_heads = q.shape[0]
                 T_len = q.shape[1]
