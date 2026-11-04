@@ -2487,6 +2487,8 @@ class Qwen2_5OmniThinkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForCo
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        # Only set when audio is present; the OmniZip gate below reads them for every video input
+        audio_features = attn_logits = None
 
         if inputs_embeds is None:
             # 1. Extract the input embeddings
