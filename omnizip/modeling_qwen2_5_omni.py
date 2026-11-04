@@ -633,6 +633,7 @@ class Qwen2_5OmniAudioAttention(nn.Module):
         self,
         hidden_states: torch.Tensor,
         cu_seqlens: Optional[torch.Tensor] = None,
+        return_logits: bool = False,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """Input shape: Batch x Time x Channel"""
 
@@ -667,7 +668,10 @@ class Qwen2_5OmniAudioAttention(nn.Module):
 
         attn_output = self.out_proj(attn_output)
 
-        return attn_output
+        if return_logits:
+            # Same scores as the flash/SDPA paths: unmasked, over the whole concatenated sequence
+            return attn_output, _audio_token_importance(query_states, key_states), key_states
+        return attn_output, None, None
 
 
 class Qwen2_5OmniAudioFlashAttention2(Qwen2_5OmniAudioAttention):
