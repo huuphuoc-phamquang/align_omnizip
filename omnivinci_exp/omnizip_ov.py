@@ -98,11 +98,11 @@ _rng = torch.Generator()
 
 
 def configure(method="none", target_retained=1.0, alpha=0.5, seed=0,
-              g=3, contextual_ratio=0.05, tokens_per_frame=32):
+              g=3, contextual_ratio=0.05, tokens_per_frame=32, max_rho=0.95):
     _CFG.update(method=method, target_retained=float(target_retained),
                 alpha=float(alpha), seed=int(seed), g=int(g),
                 contextual_ratio=float(contextual_ratio),
-                tokens_per_frame=int(tokens_per_frame))
+                tokens_per_frame=int(tokens_per_frame), max_rho=float(max_rho))
     _rng.manual_seed(int(seed))
     reset_video()
     _STATE["kept"] = 0
