@@ -2,3 +2,6 @@ results*
 YOUR_HF_HOME
 .DS_Store*
 *pyc
+# Kaggle evaluation: result archives and caches stay local
+kaggle_eval/*.zip
+kaggle_eval/__pycache__/
